@@ -1,253 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>RapidIdentity ↔ Microsoft Entra Federation — Sandbox Guide</title>
+    <title>RI x Entra Federation Sandbox Quick Guide</title>
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
 
   <body class="bg-gray-50 text-gray-800 antialiased">
-    <!-- Header / Nav -->
     <header class="bg-sky-700 text-white shadow">
       <div class="max-w-7xl mx-auto flex items-center justify-between px-4 py-6">
-        <h1 class="text-2xl font-semibold tracking-wide">
-          RapidIdentity ↔ Entra Federation (Sandbox)
-        </h1>
+        <h1 class="text-2xl font-semibold tracking-wide">RI x Entra Federation Sandbox</h1>
         <nav class="hidden md:flex space-x-6 text-sm font-medium">
           <a href="#overview" class="hover:underline">Overview</a>
           <a href="#reqs" class="hover:underline">Requirements</a>
-          <a href="#azure-tenant" class="hover:underline">Azure Tenant</a>
-          <a href="#domain" class="hover:underline">Domain</a>
-          <a href="#ri-config" class="hover:underline">RapidIdentity</a>
+          <a href="#tenant" class="hover:underline">Azure Tenant</a>
+          <a href="#domain" class="hover:underline">Custom Domain</a>
+          <a href="#ri" class="hover:underline">RI Setup</a>
           <a href="#federate" class="hover:underline">Federate</a>
-          <a href="#pilot-users" class="hover:underline">Pilot Users</a>
+          <a href="#users" class="hover:underline">Pilot Users</a>
           <a href="#test" class="hover:underline">Test</a>
-          <a href="#troubleshooting" class="hover:underline">Troubleshooting</a>
+          <a href="#troubleshoot" class="hover:underline">Troubleshooting</a>
           <a href="#rollback" class="hover:underline">Rollback</a>
         </nav>
       </div>
     </header>
 
     <main class="max-w-4xl mx-auto px-4 py-12 space-y-20">
-      <!-- 0. Overview -->
-      <section id="overview" class="space-y-6">
-        <h2 class="text-xl font-semibold text-sky-700 flex items-center">
-          <span class="mr-2">0.</span> What you’ll build
-        </h2>
-        <p>
-          A free sandbox to test customer tickets that involve Microsoft Entra (Azure AD)
-          federation with RapidIdentity (RI). The flow uses WS-Fed with SAML 1.1 tokens and
-          sets <span class="font-semibold">SourceAnchor/ImmutableID = <code>idautoID</code></span>.  
-          Users are created in RI first; the same anchor is set when the user is created in Entra.
-        </p>
-        <div class="rounded-md border-l-4 border-amber-400 bg-amber-50 p-4 text-sm">
-          <p class="font-semibold">Important safety rule</p>
-          <ul class="list-disc list-inside mt-2 space-y-1">
-            <li>Federate a <span class="font-semibold">custom test domain</span>, not your
-              <code>onmicrosoft.com</code> domain.</li>
-            <li>Keep a break‑glass Global Admin on <code>&lt;tenant&gt;.onmicrosoft.com</code>;
-              do not federate that domain.</li>
-          </ul>
+
+      <section id="overview" class="space-y-4">
+        <h2 class="text-xl font-semibold text-sky-700">0. Overview</h2>
+        <p>This is a reference for me and any coworker who needs a fast Entra sandbox wired to RI. Use the RI doc template, change only what is needed for the tenant, and keep it simple. We use idautoID as the SourceAnchor. Create users in RI first, then create them in Entra with the same anchor.</p>
+        <p>UI paths in RI:</p>
+        <ul class="list-disc list-inside">
+          <li>Identity Provider config: Configuration > Security > Identity Providers</li>
+          <li>Federated Partners: Configuration > Security > Federated Partners</li>
+        </ul>
+        <div class="mt-3 rounded border-l-4 border-amber-400 bg-amber-50 p-3 text-sm">
+          You may need a cheap test domain. GoDaddy often costs a few dollars per year. Do not federate the onmicrosoft domain.
         </div>
       </section>
 
-      <!-- 1. Requirements -->
-      <section id="reqs" class="space-y-6">
-        <h2 class="text-xl font-semibold text-sky-700 flex items-center">
-          <span class="mr-2">1.</span> Requirements
-        </h2>
-        <ul class="list-disc list-inside space-y-2">
-          <li>RI environment where you can log in as an RI admin.</li>
-          <li>A test custom domain you can modify DNS for (buy one if needed).</li>
-          <li>A personal Microsoft account to create an Azure tenant (Entra Free is fine).</li>
-          <li>Ability to run Azure Cloud Shell (PowerShell) in the browser.</li>
+      <section id="reqs" class="space-y-4">
+        <h2 class="text-xl font-semibold text-sky-700">1. Requirements</h2>
+        <ul class="list-disc list-inside space-y-1">
+          <li>RI admin access</li>
+          <li>Microsoft account for Azure portal</li>
+          <li>Custom domain with DNS control</li>
+          <li>Azure Cloud Shell access</li>
         </ul>
       </section>
 
-      <!-- 2. Create Azure tenant -->
-      <section id="azure-tenant" class="space-y-6">
-        <h2 class="text-xl font-semibold text-sky-700 flex items-center">
-          <span class="mr-2">2.</span> Create an Azure tenant (Entra)
-        </h2>
-        <ol class="list-decimal list-inside space-y-3 pl-4">
-          <li>Go to <a href="https://portal.azure.com" class="text-sky-700 underline" target="_blank" rel="noopener">portal.azure.com</a> and sign in with a personal Microsoft account.</li>
-          <li>Open <span class="font-medium">Microsoft Entra admin center</span> &rarr; <span class="font-medium">Identity</span>.</li>
-          <li>Create (or use your existing) default directory (Entra Free is fine).</li>
-          <li>Keep track of:
-            <ul class="list-disc list-inside pl-5">
-              <li><span class="font-medium">Tenant ID</span></li>
-              <li><span class="font-medium">Primary domain</span> (e.g. <code>contoso.onmicrosoft.com</code>)</li>
-            </ul>
-          </li>
-        </ol>
-
-        <div class="rounded-md border-l-4 border-amber-400 bg-amber-50 p-4 text-sm">
-          <p class="font-semibold">Cloud Shell tip</p>
-          <p class="mt-1">
-            If Cloud Shell warns that the subscription is not registered for CloudShell, run:
-          </p>
-          <pre class="bg-gray-100 p-2 rounded text-xs whitespace-pre-wrap"><code>az provider register --namespace Microsoft.CloudShell</code></pre>
-        </div>
-      </section>
-
-      <!-- 3. Add & verify custom domain -->
-      <section id="domain" class="space-y-6">
-        <h2 class="text-xl font-semibold text-sky-700 flex items-center">
-          <span class="mr-2">3.</span> Add and verify a custom domain
-        </h2>
-        <ol class="list-decimal list-inside space-y-3 pl-4">
-          <li>In Entra admin center, go to <span class="font-medium">Identity &rarr; Domain names</span> &rarr; <span class="font-medium">Add custom domain</span>.</li>
-          <li>Enter your test domain (e.g. <code>examplelab.com</code>) and click <span class="font-medium">Add</span>.</li>
-          <li>Follow the prompt to create a <span class="font-medium">TXT</span> record at your registrar. Example:
-            <pre class="bg-gray-100 p-2 rounded text-sm whitespace-pre-wrap"><code>Host / Name: @
-Type: TXT
-Value:  MS=xxxxxxxx
-TTL:    3600</code></pre>
-          </li>
-          <li>Click <span class="font-medium">Verify</span> once DNS has propagated. Do <span class="font-semibold">not</span> set this as the primary domain; we will federate it.</li>
+      <section id="tenant" class="space-y-4">
+        <h2 class="text-xl font-semibold text-sky-700">2. Create an Azure tenant</h2>
+        <ol class="list-decimal list-inside space-y-2">
+          <li>Go to https://portal.azure.com and sign in</li>
+          <li>Open Microsoft Entra admin center and confirm you have a directory</li>
+          <li>Note the Tenant ID and primary domain</li>
         </ol>
       </section>
 
-      <!-- 4. RapidIdentity configuration -->
-      <section id="ri-config" class="space-y-10">
-        <h2 class="text-xl font-semibold text-sky-700 flex items-center">
-          <span class="mr-2">4.</span> RapidIdentity configuration (use the template)
-        </h2>
+      <section id="domain" class="space-y-4">
+        <h2 class="text-xl font-semibold text-sky-700">3. Add and verify a custom domain</h2>
+        <ol class="list-decimal list-inside space-y-2">
+          <li>Entra admin center > Identity > Domain names > Add custom domain</li>
+          <li>Add your test domain</li>
+          <li>Create the TXT record at the registrar and Verify</li>
+        </ol>
+      </section>
 
-        <!-- 4.1 Download template -->
-        <div class="space-y-3">
-          <h3 class="text-lg font-semibold">4.1 Download the RI Azure federation template</h3>
-          <ol class="list-decimal list-inside space-y-2 pl-4">
-            <li>Open the RI help doc:<br/>
-              <a class="text-sky-700 underline" target="_blank" rel="noopener"
-                 href="https://help.rapididentity.com/docs/integrating-entraid-with-rapididentity-for-sso-using-graph">
-                 Integrating EntraID with RapidIdentity for SSO (Graph)
-              </a>
-            </li>
-            <li>Download the <span class="font-medium">Azure.json</span> federation partner template referenced in the doc.</li>
-          </ol>
+      <section id="ri" class="space-y-6">
+        <h2 class="text-xl font-semibold text-sky-700">4. RapidIdentity setup</h2>
+
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">4.1 Get the RI template</h3>
+          <p>Open the RI guide and download Azure.json. This partner works out of the box. You only adjust tenant specific values if needed.</p>
+          <p><a class="text-sky-700 underline" target="_blank" rel="noopener" href="https://help.rapididentity.com/docs/integrating-entraid-with-rapididentity-for-sso-using-graph">RI guide</a></p>
         </div>
 
-        <!-- 4.2 Import partner -->
-        <div class="space-y-3">
-          <h3 class="text-lg font-semibold">4.2 Import the partner in RI</h3>
-          <ol class="list-decimal list-inside space-y-2 pl-4">
-            <li>In RI portal as admin: <span class="font-medium">Configuration &rarr; Authentication &rarr; Federation</span>.</li>
-            <li>Choose <span class="font-medium">Partners &rarr; Import</span> and upload <code>Azure.json</code>.</li>
-            <li>Open the new partner (e.g. “Microsoft Online (Azure AD/Office365)”).</li>
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">4.2 Import and confirm defaults</h3>
+          <ol class="list-decimal list-inside space-y-1">
+            <li>Configuration > Security > Federated Partners</li>
+            <li>Import Azure.json</li>
+            <li>Open the partner and confirm it has SAML 1.1, Audience urn:federation:MicrosoftOnline, ReplyTo https://login.microsoftonline.com/login.srf, WS-Trust enabled</li>
           </ol>
-          <p class="text-sm">The template pre‑sets SAML 1.1, Audience and ReplyTo for Microsoft Online, and enables WS‑Trust.</p>
+          <p class="text-sm">I did not change those defaults. The only change in my lab was mapping ImmutableID to idautoID.</p>
         </div>
 
-        <!-- 4.3 Edit mappings -->
-        <div class="space-y-3">
-          <h3 class="text-lg font-semibold">4.3 Update the attribute mappings</h3>
-          <ul class="list-disc list-inside space-y-2">
-            <li><span class="font-medium">Name Identifier</span>: <code>LDAP</code> → <code>mail</code></li>
-            <li><span class="font-medium">Attribute</span> “<code>UPN</code>”: <code>LDAP</code> → <code>mail</code></li>
-            <li><span class="font-medium">Attribute</span> “<code>ImmutableID</code>”: <code>LDAP</code> → <code>idautoID</code>  
-              <span class="text-xs text-gray-600">(RI‑first anchor; if you ever do Azure‑first, map this to <code>idautoPersonExt1</code> instead.)</span>
-            </li>
-            <li><span class="font-medium">WS‑Trust</span>: Enabled; <span class="italic">Username Token Mapping Transform Type</span> = <code>No Transform</code>; Lookup = <code>Native</code></li>
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">4.3 Set attribute mapping for this flow</h3>
+          <ul class="list-disc list-inside">
+            <li>Name Identifier = LDAP mail</li>
+            <li>UPN = LDAP mail</li>
+            <li>ImmutableID = LDAP idautoID</li>
           </ul>
-          <div class="rounded-md border-l-4 border-emerald-400 bg-emerald-50 p-4 text-sm">
-            <p class="font-semibold">Why <code>mail</code>?</p>
-            <p class="mt-1">We send the user’s email (e.g. <code>ll.123456@examplelab.com</code>) as the UPN and NameID, which is what Microsoft Online expects for WS‑Fed.</p>
-          </div>
         </div>
 
-        <!-- 4.4 Capture IdP endpoints + certificate -->
-        <div class="space-y-3">
-          <h3 class="text-lg font-semibold">4.4 Capture RI IdP values and certificate</h3>
-          <ol class="list-decimal list-inside space-y-2 pl-4">
-            <li>Go to <span class="font-medium">Authentication &rarr; Identity Providers</span> and open the built‑in <span class="font-medium">RapidIdentity</span> IdP.</li>
-            <li>Copy these for later:
-              <ul class="list-disc list-inside pl-5">
-                <li><span class="font-medium">Entity ID</span>: <code>https://&lt;ri-host&gt;/idp</code></li>
-                <li><span class="font-medium">Passive/Active Sign‑in</span>: <code>https://&lt;ri-host&gt;/idp/profile/wsfed</code></li>
-                <li><span class="font-medium">MEX</span>: <code>https://&lt;ri-host&gt;/idp/profile/wstrust/mex</code></li>
-                <li><span class="font-medium">Logout</span>: <code>https://&lt;ri-host&gt;/idp/logout</code></li>
-              </ul>
-            </li>
-            <li>Download the IdP signing certificate <span class="font-medium">(.pem)</span>.</li>
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">4.4 Get IdP endpoints and cert</h3>
+          <ol class="list-decimal list-inside space-y-1">
+            <li>Configuration > Security > Identity Providers > open the built in RI IdP</li>
+            <li>Copy Entity ID, Passive and Active sign in URLs, MEX, and Logout</li>
+            <li>Download the signing certificate in PEM format</li>
           </ol>
         </div>
       </section>
 
-      <!-- 5. Federate the domain in Entra -->
-      <section id="federate" class="space-y-6">
-        <h2 class="text-xl font-semibold text-sky-700 flex items-center">
-          <span class="mr-2">5.</span> Federate the custom domain with RI (Graph PowerShell)
-        </h2>
+      <section id="federate" class="space-y-4">
+        <h2 class="text-xl font-semibold text-sky-700">5. Federate the custom domain</h2>
+        <ol class="list-decimal list-inside space-y-2">
+          <li>Open Azure Cloud Shell and choose PowerShell</li>
+          <li>Upload the IdP PEM you downloaded</li>
+          <li>Run these commands with your values</li>
+        </ol>
+        <pre class="bg-gray-100 p-2 rounded text-sm whitespace-pre-wrap"><code>Install-Module Microsoft.Graph -Scope CurrentUser -Force
+Connect-MgGraph -TenantId TENANT_GUID -UseDeviceCode -Scopes "Domain.ReadWrite.All","Directory.ReadWrite.All","Organization.ReadWrite.All","Directory.AccessAsUser.All"
 
-        <div class="rounded-md border-l-4 border-amber-400 bg-amber-50 p-4 text-sm">
-          <p class="font-semibold">Scope risk</p>
-          <p class="mt-1">
-            Federating affects sign‑in for everyone using the <em>custom</em> domain you choose.
-            That’s why we use a separate test domain. The <code>onmicrosoft.com</code> domain remains managed and can always sign in.
-          </p>
-        </div>
+$domain = "examplelab.com"
+$riHost = "https://your-ri-host"
+$cert   = (Get-Content -Raw "./ri-idp.pem") -replace "-+BEGIN CERTIFICATE-+|-+END CERTIFICATE-+|\r|\n",""
 
-        <ol class="list-decimal list-inside space-y-3 pl-4">
-          <li>Open <span class="font-medium">Azure Cloud Shell</span> in the portal and select <span class="font-medium">PowerShell</span>.</li>
-          <li>Upload the IdP <span class="font-medium">.pem</span> you downloaded (Cloud Shell &rarr; Upload).</li>
-          <li>Run the following (replace placeholders):
-            <pre class="bg-gray-100 p-2 rounded text-sm whitespace-pre-wrap"><code># 1) Install / connect to Graph
-Install-Module Microsoft.Graph -Scope CurrentUser -Force
-Connect-MgGraph -TenantId &lt;TENANT-GUID&gt; -UseDeviceCode `
-  -Scopes "Domain.ReadWrite.All","Directory.ReadWrite.All","Organization.ReadWrite.All","Directory.AccessAsUser.All"
-
-# 2) Values
-$domain = "examplelab.com"                # your custom domain (verified)
-$ri     = "https://&lt;ri-host&gt;"             # e.g. https://company.us###-rapididentity.com
-$cert   = Get-Content -Raw "./idp.pem"    # the RI IdP .pem you've uploaded
-
-# 3) Create federation (WS-Fed)
 New-MgDomainFederationConfiguration -DomainId $domain `
   -DisplayName "RapidIdentity" `
-  -IssuerUri "$ri/idp" `
-  -PassiveSignInUri "$ri/idp/profile/wsfed" `
-  -ActiveSignInUri "$ri/idp/profile/wsfed" `
-  -MetadataExchangeUri "$ri/idp/profile/wstrust/mex" `
-  -SignOutUri "$ri/idp/logout" `
+  -IssuerUri "$riHost/idp" `
+  -PassiveSignInUri "$riHost/idp/profile/wsfed" `
+  -ActiveSignInUri "$riHost/idp/profile/wsfed" `
+  -MetadataExchangeUri "$riHost/idp/profile/wstrust/mex" `
+  -SignOutUri "$riHost/idp/logout" `
   -PreferredAuthenticationProtocol "wsFed" `
   -PromptLoginBehavior "nativeSupport" `
   -FederatedIdpMfaBehavior "acceptIfMfaDoneByFederatedIdp" `
   -SigningCertificate $cert
 
-# 4) Verify
-Get-MgDomain -DomainId $domain | Format-List Id,AuthenticationType
-Get-MgDomainFederationConfiguration -DomainId $domain | Format-List *</code></pre>
-          </li>
-        </ol>
+Get-MgDomain -DomainId $domain | fl Id,AuthenticationType</code></pre>
       </section>
 
-      <!-- 6. Create pilot users -->
-      <section id="pilot-users" class="space-y-10">
-        <h2 class="text-xl font-semibold text-sky-700 flex items-center">
-          <span class="mr-2">6.</span> Create pilot users (RI‑first anchor)
-        </h2>
+      <section id="users" class="space-y-6">
+        <h2 class="text-xl font-semibold text-sky-700">6. Create pilot users</h2>
 
-        <div class="space-y-3">
-          <h3 class="text-lg font-semibold">6.1 Create the user in RI</h3>
-          <ul class="list-disc list-inside space-y-2">
-            <li>Create an <span class="font-medium">idautoPerson</span> account with:
-              <ul class="list-disc list-inside pl-5">
-                <li><span class="font-medium">mail</span> = <code>ll.123456@examplelab.com</code></li>
-                <li>Note the user’s <span class="font-medium">idautoID</span> (this will be the SourceAnchor).</li>
-              </ul>
-            </li>
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">6.1 Create in RI first</h3>
+          <p>Create a person record in RI. Example values:</p>
+          <ul class="list-disc list-inside">
+            <li>mail = testuser@examplelab.com</li>
+            <li>idautoID = generated by RI. use this as ImmutableID</li>
           </ul>
         </div>
 
-        <div class="space-y-3">
-          <h3 class="text-lg font-semibold">6.2 Create the matching user in Entra with the same anchor</h3>
-          <p class="text-sm">In Cloud Shell (Graph PowerShell):</p>
-          <pre class="bg-gray-100 p-2 rounded text-sm whitespace-pre-wrap"><code>$upn   = "ll.123456@examplelab.com"
-$nick  = "ll.123456"
-$pwd   = "P@ssw0rd123!"        # lab password
-$anchor= "&lt;idautoID-from-RI&gt;"  # e.g. 38ea442c-a2bc-4e92-a3a5-3d93441f9d5d
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">6.2 Create in Entra with the same anchor</h3>
+          <pre class="bg-gray-100 p-2 rounded text-sm whitespace-pre-wrap"><code>Connect-MgGraph -TenantId TENANT_GUID -UseDeviceCode -Scopes "User.ReadWrite.All","Directory.ReadWrite.All"
+
+$upn   = "testuser@examplelab.com"
+$nick  = "testuser"
+$pwd   = "P@ssw0rd123!"
+$anchor= "PUT_IDAUTOID_FROM_RI_HERE"
 
 New-MgUser `
   -DisplayName $nick `
@@ -256,102 +164,53 @@ New-MgUser `
   -AccountEnabled:$true `
   -PasswordProfile @{ password = $pwd; forceChangePasswordNextSignIn = $false } `
   -OnPremisesImmutableId $anchor</code></pre>
-
-          <div class="rounded-md border-l-4 border-emerald-400 bg-emerald-50 p-4 text-sm">
-            <p class="font-semibold">Why create with the anchor set?</p>
-            <p class="mt-1">You cannot change SourceAnchor for a federated user later. Creating the Entra user with the correct
-              <code>onPremisesImmutableId</code> avoids mismatches and AADSTS errors.</p>
-          </div>
         </div>
       </section>
 
-      <!-- 7. Test -->
-      <section id="test" class="space-y-6">
-        <h2 class="text-xl font-semibold text-sky-700 flex items-center">
-          <span class="mr-2">7.</span> Test sign‑in
-        </h2>
-        <ol class="list-decimal list-inside space-y-3 pl-4">
-          <li>Open:<br/>
-            <a class="text-sky-700 underline" target="_blank" rel="noopener"
-               href="https://login.microsoftonline.com/login.srf?whr=examplelab.com">
-               https://login.microsoftonline.com/login.srf?whr=<span class="italic">examplelab.com</span>
-            </a>
-          </li>
-          <li>Sign in as the pilot user (e.g. <code>ll.123456@examplelab.com</code>).</li>
-          <li>You should be redirected to RI for auth, then back to Microsoft with a valid session.</li>
+      <section id="test" class="space-y-4">
+        <h2 class="text-xl font-semibold text-sky-700">7. Test</h2>
+        <ol class="list-decimal list-inside space-y-2">
+          <li>Open https://login.microsoftonline.com/login.srf?whr=examplelab.com</li>
+          <li>Sign in as testuser@examplelab.com</li>
+          <li>Expect redirect to RI then back to Microsoft</li>
         </ol>
       </section>
 
-      <!-- Troubleshooting -->
-      <section id="troubleshooting" class="space-y-8">
-        <h2 class="text-xl font-semibold text-sky-700 flex items-center">
-          <span class="mr-2">8.</span> Troubleshooting
-        </h2>
-
+      <section id="troubleshoot" class="space-y-8">
+        <h2 class="text-xl font-semibold text-sky-700">8. Troubleshooting</h2>
         <div class="grid md:grid-cols-2 gap-8">
           <div>
             <h3 class="font-semibold mb-2">Common errors</h3>
-            <ul class="list-disc list-inside space-y-3 text-sm">
-              <li><span class="font-medium">AADSTS50008: The SAML token is invalid</span><br/>
-                Token type not SAML 1.1, Audience/ReplyTo incorrect, or NameID mapping not <code>mail</code>.
-                Use the template and confirm: Audience <code>urn:federation:MicrosoftOnline</code>, ReplyTo
-                <code>https://login.microsoftonline.com/login.srf</code>, NameID &amp; UPN = <code>mail</code>.
-              </li>
-              <li><span class="font-medium">AADSTS51004: user account &lt;GUID&gt; does not exist</span><br/>
-                Microsoft is trying to look up by GUID because NameID/UPN aren’t email.
-                Make sure NameID and UPN both map to <code>mail</code>.
-              </li>
-              <li><span class="font-medium">AADSTS90019: No tenant‑identifying information</span><br/>
-                Wrong ReplyTo/Audience, or you didn’t hit the tenant with <code>?whr=yourdomain</code> during testing.
-              </li>
-              <li><span class="font-medium">“You cannot update SourceAnchor for federated user”</span><br/>
-                Delete and recreate the user with the correct <code>onPremisesImmutableId</code> (or temporarily un‑federate the domain—lab only).
-              </li>
+            <ul class="list-disc list-inside text-sm space-y-2">
+              <li>AADSTS50008 SAML token invalid. Use the RI template and keep SAML 1.1, Audience urn:federation:MicrosoftOnline, ReplyTo https://login.microsoftonline.com/login.srf, NameID mail</li>
+              <li>AADSTS51004 user account guid does not exist. You are sending a guid as NameID or the anchor does not match</li>
+              <li>AADSTS90019 no tenant info. Add whr param during tests or fix NameID and ReplyTo</li>
+              <li>Cannot update SourceAnchor. Delete and recreate the Entra user with the correct onPremisesImmutableId or un-federate in a lab only</li>
             </ul>
           </div>
-
           <div>
             <h3 class="font-semibold mb-2">Quick checks</h3>
-            <pre class="bg-gray-100 p-3 rounded text-sm whitespace-pre-wrap"><code># Graph status
-Get-MgDomain -DomainId examplelab.com | fl Id,AuthenticationType
+            <pre class="bg-gray-100 p-3 rounded text-sm whitespace-pre-wrap"><code>Get-MgDomain -DomainId examplelab.com | fl Id,AuthenticationType
 Get-MgDomainFederationConfiguration -DomainId examplelab.com | fl *
-
-# Verify user anchor
-Invoke-MgGraphRequest -Method GET `
-  -Uri "https://graph.microsoft.com/v1.0/users/ll.123456@examplelab.com?$select=id,userPrincipalName,onPremisesImmutableId"</code></pre>
+Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/users/testuser@examplelab.com?$select=id,userPrincipalName,onPremisesImmutableId"</code></pre>
           </div>
         </div>
       </section>
 
-      <!-- Rollback -->
-      <section id="rollback" class="space-y-6 pb-16">
-        <h2 class="text-xl font-semibold text-sky-700 flex items-center">
-          <span class="mr-2">9.</span> Rollback (un‑federate the test domain)
-        </h2>
-        <p class="text-sm">
-          Removing the federation configuration returns the custom domain to Managed authentication.
-        </p>
+      <section id="rollback" class="space-y-4 pb-16">
+        <h2 class="text-xl font-semibold text-sky-700">9. Rollback</h2>
+        <p class="text-sm">Un-federate the test domain if you want to return to managed auth.</p>
         <pre class="bg-gray-100 p-2 rounded text-sm whitespace-pre-wrap"><code>$domain = "examplelab.com"
 $fed    = Get-MgDomainFederationConfiguration -DomainId $domain
 Remove-MgDomainFederationConfiguration -DomainId $domain -InternalDomainFederationId $fed.Id
-
-# Verify
 Get-MgDomain -DomainId $domain | fl Id,AuthenticationType</code></pre>
-
-        <details class="group border border-gray-200 rounded-lg">
-          <summary class="cursor-pointer select-none px-3 py-2 font-medium text-sky-700">Appendix: Azure‑first variant</summary>
-          <div class="px-3 pb-3 mt-2 space-y-3 text-sm">
-            <p>If users are created in Entra first, choose an attribute in RI to store the Azure anchor (e.g.
-              <code>idautoPersonExt1</code>) and map “ImmutableID” to that attribute in the federation partner.
-              Populate that attribute from Azure with the user’s <code>onPremisesImmutableId</code> or ObjectId, then test.</p>
-          </div>
-        </details>
       </section>
+
     </main>
 
     <footer class="bg-sky-700 text-white text-sm py-4">
       <div class="max-w-7xl mx-auto px-4 text-center">
-        RapidIdentity ↔ Entra Federation (Sandbox) • Internal Support Guide
+        RI x Entra Federation Sandbox
       </div>
     </footer>
   </body>
