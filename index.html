@@ -45,45 +45,53 @@
           </div>
 
           <div id="panel-vars" class="p-4 grid md:grid-cols-2 gap-4">
-            <div class="relative group">
+            <div class="relative">
               <label class="block text-sm font-medium mb-1 flex items-center gap-2">
                 Tenant ID
-                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-700 text-white text-xs">?</span>
-                <span class="absolute left-0 top-7 z-10 hidden group-hover:block bg-white border rounded p-2 text-xs w-80 shadow">
-                  From Microsoft. Entra admin center. Identity > Overview shows Tenant ID. If you already had a default tenant, use that. You do not need to create a new tenant.
+                <span class="relative inline-flex group">
+                  <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-700 text-white text-xs cursor-help">?</span>
+                  <span class="absolute left-0 top-6 z-10 hidden group-hover:block bg-white border rounded p-2 text-xs w-80 shadow">
+                    From Microsoft. Entra admin center. Identity > Overview shows Tenant ID. If you already had a default tenant, use that. You do not need to create a new tenant.
+                  </span>
                 </span>
               </label>
               <input id="TENANT_ID" class="w-full border rounded p-2" placeholder="00000000-0000-0000-0000-000000000000"/>
             </div>
 
-            <div class="relative group">
+            <div class="relative">
               <label class="block text-sm font-medium mb-1 flex items-center gap-2">
                 Custom domain to federate
-                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-700 text-white text-xs">?</span>
-                <span class="absolute left-0 top-7 z-10 hidden group-hover:block bg-white border rounded p-2 text-xs w-80 shadow">
-                  Your test domain, for example examplelab.com. You will add a TXT record in DNS to verify it in Entra.
+                <span class="relative inline-flex group">
+                  <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-700 text-white text-xs cursor-help">?</span>
+                  <span class="absolute left-0 top-6 z-10 hidden group-hover:block bg-white border rounded p-2 text-xs w-80 shadow">
+                    Your test domain, for example examplelab.com. You will add a TXT record in DNS to verify it in Entra.
+                  </span>
                 </span>
               </label>
               <input id="DOMAIN" class="w-full border rounded p-2" placeholder="examplelab.com"/>
             </div>
 
-            <div class="md:col-span-2 relative group">
+            <div class="md:col-span-2 relative">
               <label class="block text-sm font-medium mb-1 flex items-center gap-2">
                 RI host base URL
-                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-700 text-white text-xs">?</span>
-                <span class="absolute left-0 top-7 z-10 hidden group-hover:block bg-white border rounded p-2 text-xs w-80 shadow">
-                  Your RI tenant base URL. Example https://yourtenant.us004-rapididentity.com
+                <span class="relative inline-flex group">
+                  <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-700 text-white text-xs cursor-help">?</span>
+                  <span class="absolute left-0 top-6 z-10 hidden group-hover:block bg-white border rounded p-2 text-xs w-80 shadow">
+                    Your RI tenant base URL. Example https://yourtenant.us004-rapididentity.com
+                  </span>
                 </span>
               </label>
               <input id="RI_HOST" class="w-full border rounded p-2" placeholder="https://your-ri-host"/>
             </div>
 
-            <div class="md:col-span-2 relative group">
+            <div class="md:col-span-2 relative">
               <label class="block text-sm font-medium mb-1 flex items-center gap-2">
                 RI IdP signing cert (PEM)
-                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-700 text-white text-xs">?</span>
-                <span class="absolute left-0 top-7 z-10 hidden group-hover:block bg-white border rounded p-2 text-xs w-80 shadow">
-                  In RI go to Configuration > Security > Identity Providers > RapidIdentity. Download the PEM certificate and paste here including the begin and end lines.
+                <span class="relative inline-flex group">
+                  <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-700 text-white text-xs cursor-help">?</span>
+                  <span class="absolute left-0 top-6 z-10 hidden group-hover:block bg-white border rounded p-2 text-xs w-80 shadow">
+                    In RI go to Configuration > Security > Identity Providers > RapidIdentity. Download the PEM certificate and paste here including the begin and end lines.
+                  </span>
                 </span>
               </label>
               <textarea id="PEM" class="w-full border rounded p-2 h-28" placeholder="-----BEGIN CERTIFICATE-----"></textarea>
@@ -95,57 +103,67 @@
           </div>
 
           <div id="panel-user" class="p-4 hidden space-y-4">
-            <div class="relative group">
+            <div class="relative">
               <label class="block text-sm font-medium mb-1 flex items-center gap-2">
                 RI user JSON
-                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-700 text-white text-xs">?</span>
-                <span class="absolute left-0 top-7 z-10 hidden group-hover:block bg-white border rounded p-2 text-xs w-80 shadow">
-                  Paste a raw RI user object. This will fill UPN from mail and the anchor from idautoID.
+                <span class="relative inline-flex group">
+                  <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-700 text-white text-xs cursor-help">?</span>
+                  <span class="absolute left-0 top-6 z-10 hidden group-hover:block bg-white border rounded p-2 text-xs w-80 shadow">
+                    Paste a raw RI user object. This will fill UPN from mail and the anchor from idautoID.
+                  </span>
                 </span>
               </label>
               <textarea id="RI_JSON" class="w-full border rounded p-2 h-40" placeholder='{"mail":"testuser@examplelab.com","idautoID":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"}'></textarea>
             </div>
 
             <div class="grid md:grid-cols-2 gap-4">
-              <div class="relative group">
+              <div class="relative">
                 <label class="block text-sm font-medium mb-1 flex items-center gap-2">
                   User UPN
-                  <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-700 text-white text-xs">?</span>
-                  <span class="absolute left-0 top-7 z-10 hidden group-hover:block bg-white border rounded p-2 text-xs w-80 shadow">
-                    Email for the federated domain. Example testuser@examplelab.com
+                  <span class="relative inline-flex group">
+                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-700 text-white text-xs cursor-help">?</span>
+                    <span class="absolute left-0 top-6 z-10 hidden group-hover:block bg-white border rounded p-2 text-xs w-80 shadow">
+                      Email for the federated domain. Example testuser@examplelab.com
+                    </span>
                   </span>
                 </label>
                 <input id="UPN" class="w-full border rounded p-2" placeholder="testuser@examplelab.com"/>
               </div>
 
-              <div class="relative group">
+              <div class="relative">
                 <label class="block text-sm font-medium mb-1 flex items-center gap-2">
                   Mail nickname
-                  <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-700 text-white text-xs">?</span>
-                  <span class="absolute left-0 top-7 z-10 hidden group-hover:block bg-white border rounded p-2 text-xs w-80 shadow">
-                    Alias without domain. Example testuser
+                  <span class="relative inline-flex group">
+                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-700 text-white text-xs cursor-help">?</span>
+                    <span class="absolute left-0 top-6 z-10 hidden group-hover:block bg-white border rounded p-2 text-xs w-80 shadow">
+                      Alias without domain. Example testuser
+                    </span>
                   </span>
                 </label>
                 <input id="NICK" class="w-full border rounded p-2" placeholder="testuser"/>
               </div>
 
-              <div class="relative group">
+              <div class="relative">
                 <label class="block text-sm font-medium mb-1 flex items-center gap-2">
                   Temp password
-                  <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-700 text-white text-xs">?</span>
-                  <span class="absolute left-0 top-7 z-10 hidden group-hover:block bg-white border rounded p-2 text-xs w-80 shadow">
-                    Any lab password you will change later
+                  <span class="relative inline-flex group">
+                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-700 text-white text-xs cursor-help">?</span>
+                    <span class="absolute left-0 top-6 z-10 hidden group-hover:block bg-white border rounded p-2 text-xs w-80 shadow">
+                      Any lab password you will change later
+                    </span>
                   </span>
                 </label>
                 <input id="PWD" class="w-full border rounded p-2" value="P@ssw0rd123!"/>
               </div>
 
-              <div class="relative group">
+              <div class="relative">
                 <label class="block text-sm font-medium mb-1 flex items-center gap-2">
                   ImmutableID
-                  <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-700 text-white text-xs">?</span>
-                  <span class="absolute left-0 top-7 z-10 hidden group-hover:block bg-white border rounded p-2 text-xs w-80 shadow">
-                    Auto filled from RI user JSON idautoID. If not using JSON, paste the idautoID from RI.
+                  <span class="relative inline-flex group">
+                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-700 text-white text-xs cursor-help">?</span>
+                    <span class="absolute left-0 top-6 z-10 hidden group-hover:block bg-white border rounded p-2 text-xs w-80 shadow">
+                      Auto filled from RI user JSON idautoID. If not using JSON, paste the idautoID from RI.
+                    </span>
                   </span>
                 </label>
                 <input id="ANCHOR" class="w-full border rounded p-2" placeholder="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"/>
@@ -292,14 +310,8 @@ Get-MgDomain -DomainId $domain | fl Id,AuthenticationType</code></pre>
       const blockIds = ["ps-federate","ps-user","ps-rollback","login-url"];
       const blocks = Object.fromEntries(blockIds.map(id => [id, document.getElementById(id)]));
 
-      blockIds.forEach(id => {
-        const el = blocks[id];
-        if (el) el.dataset.template = el.textContent;
-      });
-
-      ids.forEach(id => {
-        if (els[id] && !els[id].value) els[id].value = defaults[id] || "";
-      });
+      blockIds.forEach(id => { const el = blocks[id]; if (el) el.dataset.template = el.textContent; });
+      ids.forEach(id => { if (els[id] && !els[id].value) els[id].value = defaults[id] || ""; });
 
       function render() {
         const v = Object.fromEntries(ids.map(id => [id, (els[id]?.value || "").trim() || defaults[id]]));
@@ -323,7 +335,7 @@ Get-MgDomain -DomainId $domain | fl Id,AuthenticationType</code></pre>
       }
 
       function applyUserJson() {
-        const raw = document.getElementById("RI_JSON").value.trim();
+        const raw = document.getElementById("RI_JSON")?.value.trim();
         if (!raw) return;
         try {
           const j = JSON.parse(raw);
