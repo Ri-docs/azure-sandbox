@@ -1,125 +1,200 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>RI x Entra Federation Sandbox Quick Guide</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Entra x RI Federation Sandbox - Quick Guide</title>
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
 
   <body class="bg-gray-50 text-gray-800 antialiased">
     <header class="bg-sky-700 text-white shadow">
-      <div class="max-w-7xl mx-auto flex items-center justify-between px-4 py-6">
-        <h1 class="text-2xl font-semibold tracking-wide">RI x Entra Federation Sandbox</h1>
+      <div class="max-w-7xl mx-auto px-4 py-6 flex items-center justify-between">
+        <h1 class="text-2xl font-semibold tracking-wide">Entra x RI Federation Sandbox</h1>
         <nav class="hidden md:flex space-x-6 text-sm font-medium">
           <a href="#overview" class="hover:underline">Overview</a>
-          <a href="#reqs" class="hover:underline">Requirements</a>
+          <a href="#quickform" class="hover:underline">Prefill</a>
           <a href="#tenant" class="hover:underline">Azure Tenant</a>
-          <a href="#domain" class="hover:underline">Custom Domain</a>
+          <a href="#domain" class="hover:underline">Domain</a>
           <a href="#ri" class="hover:underline">RI Setup</a>
           <a href="#federate" class="hover:underline">Federate</a>
           <a href="#users" class="hover:underline">Pilot Users</a>
           <a href="#test" class="hover:underline">Test</a>
-          <a href="#troubleshoot" class="hover:underline">Troubleshooting</a>
+          <a href="#troubleshoot" class="hover:underline">Troubleshoot</a>
           <a href="#rollback" class="hover:underline">Rollback</a>
         </nav>
       </div>
     </header>
 
-    <main class="max-w-4xl mx-auto px-4 py-12 space-y-20">
-
+    <main class="max-w-5xl mx-auto px-4 py-8 space-y-16">
       <section id="overview" class="space-y-4">
         <h2 class="text-xl font-semibold text-sky-700">0. Overview</h2>
-        <p>This is a reference for a fast Entra sandbox wired to RI. Use the RI doc template, change only what is needed for the tenant, and keep it simple. We use idautoID as the SourceAnchor. Create users in RI first, then create them in Entra with the same anchor.</p>
-        <p>UI paths in RI:</p>
-        <ul class="list-disc list-inside">
-          <li>Identity Provider config: Configuration > Security > Identity Providers</li>
-          <li>Federated Partners: Configuration > Security > Federated Partners</li>
-        </ul>
-        <div class="mt-3 rounded border-l-4 border-amber-400 bg-amber-50 p-3 text-sm">
-          You may need a cheap test domain. GoDaddy often costs a few dollars per year. Do not federate the onmicrosoft domain.
+        <p>
+          Goal: stand up a safe Entra sandbox that federates a test domain to RI using the RI
+          Azure.json partner. Keep defaults from the RI doc. Only adjust tenant specifics and
+          map ImmutableID to idautoID for an RI-first anchor. Create users in RI first, then in Entra
+          with the same anchor.
+        </p>
+        <p class="text-sm">
+          RI paths:
+          Identity Provider config is under Configuration > Security > Identity Providers.
+          Federated partners is under Configuration > Security > Federated Partners.
+        </p>
+        <div class="rounded border-l-4 border-amber-400 bg-amber-50 p-3 text-sm">
+          You need a test domain. Buy one on GoDaddy or similar. Cheap domains are a few dollars per year.
+          Do not federate the onmicrosoft.com domain.
         </div>
       </section>
 
-      <section id="reqs" class="space-y-4">
-        <h2 class="text-xl font-semibold text-sky-700">1. Requirements</h2>
-        <ul class="list-disc list-inside space-y-1">
-          <li>RI admin access</li>
-          <li>Microsoft account for Azure portal</li>
-          <li>Custom domain with DNS control</li>
-          <li>Azure Cloud Shell access</li>
-        </ul>
+      <section id="quickform" class="space-y-4">
+        <h2 class="text-xl font-semibold text-sky-700">1. Prefill values</h2>
+
+        <div class="rounded-lg border bg-white">
+          <div class="flex border-b">
+            <button id="tab-vars" class="px-4 py-2 text-sm font-semibold text-sky-700 border-b-2 border-sky-700">Tenant and domain</button>
+            <button id="tab-user" class="px-4 py-2 text-sm">User builder</button>
+          </div>
+
+          <div id="panel-vars" class="p-4 grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Tenant ID</label>
+              <input id="TENANT_ID" class="w-full border rounded p-2" placeholder="00000000-0000-0000-0000-000000000000" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Custom domain to federate</label>
+              <input id="DOMAIN" class="w-full border rounded p-2" placeholder="examplelab.com" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium mb-1">RI host base URL</label>
+              <input id="RI_HOST" class="w-full border rounded p-2" placeholder="https://your-ri-host" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium mb-1">IdP signing certificate (PEM). Paste the full text including begin/end lines</label>
+              <textarea id="PEM" class="w-full border rounded p-2 h-28" placeholder="-----BEGIN CERTIFICATE-----"></textarea>
+            </div>
+            <div class="md:col-span-2">
+              <button id="applyVars" class="px-4 py-2 bg-sky-700 text-white rounded">Apply</button>
+            </div>
+          </div>
+
+          <div id="panel-user" class="p-4 hidden space-y-4">
+            <div class="rounded border bg-gray-50 p-3 text-sm">
+              Option A: paste an RI user JSON (from dlwQuery or similar). This will fill UPN and anchor.
+            </div>
+            <textarea id="RI_JSON" class="w-full border rounded p-2 h-40" placeholder='{"mail":"testuser@examplelab.com","idautoID":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"}'></textarea>
+
+            <div class="rounded border bg-gray-50 p-3 text-sm">
+              Option B: fill fields manually.
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium mb-1">User UPN</label>
+                <input id="UPN" class="w-full border rounded p-2" placeholder="testuser@examplelab.com" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Mail nickname</label>
+                <input id="NICK" class="w-full border rounded p-2" placeholder="testuser" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Temp password</label>
+                <input id="PWD" class="w-full border rounded p-2" value="P@ssw0rd123!" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">ImmutableID from RI (idautoID)</label>
+                <input id="ANCHOR" class="w-full border rounded p-2" placeholder="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" />
+              </div>
+            </div>
+            <button id="applyUser" class="px-4 py-2 bg-sky-700 text-white rounded">Apply</button>
+          </div>
+        </div>
       </section>
 
       <section id="tenant" class="space-y-4">
-        <h2 class="text-xl font-semibold text-sky-700">2. Create an Azure tenant</h2>
+        <h2 class="text-xl font-semibold text-sky-700">2. Azure tenant</h2>
         <ol class="list-decimal list-inside space-y-2">
-          <li>Go to https://portal.azure.com and sign in</li>
-          <li>Open Microsoft Entra admin center and confirm you have a directory</li>
-          <li>Note the Tenant ID and primary domain</li>
+          <li>Go to https://portal.azure.com and sign in or create a Microsoft account.</li>
+          <li>If you do not have a tenant and the Create button is disabled, start a Microsoft 365 E3 trial at https://signup.microsoft.com and turn off recurring billing after it activates. Then return to the portal.</li>
+          <li>In the portal open Microsoft Entra admin center.</li>
+          <li>Identity > Manage tenants > Create > Microsoft Entra ID. Fill org and initial domain. Create. Switch into the new tenant.</li>
+          <li>Note your Tenant ID. You will need it in commands below.</li>
+          <li>Open Cloud Shell:
+            <ul class="list-disc list-inside pl-4">
+              <li>Click the Cloud Shell icon at the top of the portal or go to https://shell.azure.com</li>
+              <li>Choose PowerShell</li>
+              <li>If prompted, create storage</li>
+            </ul>
+          </li>
         </ol>
       </section>
 
+      <!-- Domain add and verify with GoDaddy steps -->
       <section id="domain" class="space-y-4">
         <h2 class="text-xl font-semibold text-sky-700">3. Add and verify a custom domain</h2>
         <ol class="list-decimal list-inside space-y-2">
           <li>Entra admin center > Identity > Domain names > Add custom domain</li>
-          <li>Add your test domain</li>
-          <li>Create the TXT record at the registrar and Verify</li>
+          <li>Enter your domain and click Add</li>
+          <li>Entra shows a TXT record. Example
+            <pre class="bg-gray-100 p-2 rounded text-sm whitespace-pre-wrap"><code>Host or Name: @
+Type: TXT
+Value: MS=xxxxxxxx
+TTL: 3600</code></pre>
+          </li>
+          <li>GoDaddy steps
+            <ul class="list-disc list-inside pl-4">
+              <li>Sign in at https://dcc.godaddy.com</li>
+              <li>Domains > pick your domain > DNS</li>
+              <li>Click Add</li>
+              <li>Type: TXT</li>
+              <li>Name: @</li>
+              <li>Value: paste the MS= string from Entra</li>
+              <li>TTL: 1 hour</li>
+              <li>Save</li>
+              <li>For a subdomain, set Name to the label only. Example Name: students. Value is still MS=xxxx</li>
+            </ul>
+          </li>
+          <li>Back in Entra click Verify. Usually works within a few minutes.</li>
         </ol>
       </section>
 
       <section id="ri" class="space-y-6">
-        <h2 class="text-xl font-semibold text-sky-700">4. RapidIdentity setup</h2>
-
-        <div class="space-y-2">
-          <h3 class="text-lg font-semibold">4.1 Get the RI template</h3>
-          <p>Open the RI guide and download Azure.json. This partner works out of the box. You only adjust tenant specific values if needed.</p>
-          <p><a class="text-sky-700 underline" target="_blank" rel="noopener" href="https://help.rapididentity.com/docs/integrating-entraid-with-rapididentity-for-sso-using-graph">RI guide</a></p>
-        </div>
-
-        <div class="space-y-2">
-          <h3 class="text-lg font-semibold">4.2 Import and confirm defaults</h3>
-          <ol class="list-decimal list-inside space-y-1">
-            <li>Configuration > Security > Federated Partners</li>
-            <li>Import Azure.json</li>
-            <li>Open the partner and confirm it has SAML 1.1, Audience urn:federation:MicrosoftOnline, ReplyTo https://login.microsoftonline.com/login.srf, WS-Trust enabled</li>
-          </ol>
-          <p class="text-sm">I did not change those defaults. The only change in my lab was mapping ImmutableID to idautoID.</p>
-        </div>
-
-        <div class="space-y-2">
-          <h3 class="text-lg font-semibold">4.3 Set attribute mapping for this flow</h3>
-          <ul class="list-disc list-inside">
-            <li>Name Identifier = LDAP mail</li>
-            <li>UPN = LDAP mail</li>
-            <li>ImmutableID = LDAP idautoID</li>
-          </ul>
-        </div>
-
-        <div class="space-y-2">
-          <h3 class="text-lg font-semibold">4.4 Get IdP endpoints and cert</h3>
-          <ol class="list-decimal list-inside space-y-1">
-            <li>Configuration > Security > Identity Providers > open the built in RI IdP</li>
-            <li>Copy Entity ID, Passive and Active sign in URLs, MEX, and Logout</li>
-            <li>Download the signing certificate in PEM format</li>
-          </ol>
-        </div>
+        <h2 class="text-xl font-semibold text-sky-700">4. RI setup</h2>
+        <ol class="list-decimal list-inside space-y-2">
+          <li>Open the RI doc and download Azure.json
+            <div><a class="text-sky-700 underline" target="_blank" rel="noopener" href="https://help.rapididentity.com/docs/integrating-entraid-with-rapididentity-for-sso-using-graph">RI Entra federation doc</a></div>
+          </li>
+          <li>In RI: Configuration > Security > Federated Partners > Import > pick Azure.json</li>
+          <li>Open the imported partner and confirm defaults. Do not change the Audience, ReplyTo, token type, or WS-Trust.</li>
+          <li>Map attributes for RI-first
+            <ul class="list-disc list-inside pl-4">
+              <li>Name Identifier = LDAP mail</li>
+              <li>UPN = LDAP mail</li>
+              <li>ImmutableID = LDAP idautoID</li>
+            </ul>
+          </li>
+          <li>Get IdP info. Configuration > Security > Identity Providers > open the RI IdP and copy
+            <ul class="list-disc list-inside pl-4">
+              <li>Entity ID: https://your-ri-host/idp</li>
+              <li>Passive sign in: https://your-ri-host/idp/profile/wsfed</li>
+              <li>Active sign in: https://your-ri-host/idp/profile/wsfed</li>
+              <li>MEX: https://your-ri-host/idp/profile/wstrust/mex</li>
+              <li>Logout: https://your-ri-host/idp/logout</li>
+              <li>Download the signing certificate in PEM format</li>
+            </ul>
+          </li>
+        </ol>
       </section>
 
       <section id="federate" class="space-y-4">
-        <h2 class="text-xl font-semibold text-sky-700">5. Federate the custom domain</h2>
-        <ol class="list-decimal list-inside space-y-2">
-          <li>Open Azure Cloud Shell and choose PowerShell</li>
-          <li>Upload the IdP PEM you downloaded</li>
-          <li>Run these commands with your values</li>
-        </ol>
-        <pre class="bg-gray-100 p-2 rounded text-sm whitespace-pre-wrap"><code>Install-Module Microsoft.Graph -Scope CurrentUser -Force
-Connect-MgGraph -TenantId TENANT_GUID -UseDeviceCode -Scopes "Domain.ReadWrite.All","Directory.ReadWrite.All","Organization.ReadWrite.All","Directory.AccessAsUser.All"
+        <h2 class="text-xl font-semibold text-sky-700">5. Federate the domain in Entra</h2>
+        <p class="text-sm">Use Cloud Shell PowerShell. Paste your values or use the prefilled ones from the form.</p>
+        <pre class="bg-gray-100 p-2 rounded text-sm whitespace-pre-wrap"><code id="ps-federate">Install-Module Microsoft.Graph -Scope CurrentUser -Force
+Connect-MgGraph -TenantId TENANT_ID -UseDeviceCode -Scopes "Domain.ReadWrite.All","Directory.ReadWrite.All","Organization.ReadWrite.All","Directory.AccessAsUser.All"
 
-$domain = "examplelab.com"
-$riHost = "https://your-ri-host"
-$cert   = (Get-Content -Raw "./ri-idp.pem") -replace "-+BEGIN CERTIFICATE-+|-+END CERTIFICATE-+|\r|\n",""
+$domain = "DOMAIN"
+$riHost = "RI_HOST"
+$cert   = @"
+PEM_TEXT
+"@ -replace "-+BEGIN CERTIFICATE-+|-+END CERTIFICATE-+|\r|\n",""
 
 New-MgDomainFederationConfiguration -DomainId $domain `
   -DisplayName "RapidIdentity" `
@@ -137,25 +212,21 @@ Get-MgDomain -DomainId $domain | fl Id,AuthenticationType</code></pre>
       </section>
 
       <section id="users" class="space-y-6">
-        <h2 class="text-xl font-semibold text-sky-700">6. Create pilot users</h2>
+        <h2 class="text-xl font-semibold text-sky-700">6. Pilot users</h2>
+        <ol class="list-decimal list-inside space-y-2">
+          <li>Create the user in RI
+            <ul class="list-disc list-inside pl-4">
+              <li>mail = testuser@DOMAIN</li>
+              <li>idautoID = the anchor to reuse in Entra</li>
+            </ul>
+          </li>
+          <li>Create the user in Entra with the same anchor
+            <pre class="bg-gray-100 p-2 rounded text-sm whitespace-pre-wrap"><code id="ps-user">Connect-MgGraph -TenantId TENANT_ID -UseDeviceCode -Scopes "User.ReadWrite.All","Directory.ReadWrite.All"
 
-        <div class="space-y-2">
-          <h3 class="text-lg font-semibold">6.1 Create in RI first</h3>
-          <p>Create a person record in RI. Example values:</p>
-          <ul class="list-disc list-inside">
-            <li>mail = testuser@examplelab.com</li>
-            <li>idautoID = generated by RI. use this as ImmutableID</li>
-          </ul>
-        </div>
-
-        <div class="space-y-2">
-          <h3 class="text-lg font-semibold">6.2 Create in Entra with the same anchor</h3>
-          <pre class="bg-gray-100 p-2 rounded text-sm whitespace-pre-wrap"><code>Connect-MgGraph -TenantId TENANT_GUID -UseDeviceCode -Scopes "User.ReadWrite.All","Directory.ReadWrite.All"
-
-$upn   = "testuser@examplelab.com"
-$nick  = "testuser"
-$pwd   = "P@ssw0rd123!"
-$anchor= "PUT_IDAUTOID_FROM_RI_HERE"
+$upn   = "UPN"
+$nick  = "NICK"
+$pwd   = "PWD"
+$anchor= "ANCHOR"
 
 New-MgUser `
   -DisplayName $nick `
@@ -164,54 +235,127 @@ New-MgUser `
   -AccountEnabled:$true `
   -PasswordProfile @{ password = $pwd; forceChangePasswordNextSignIn = $false } `
   -OnPremisesImmutableId $anchor</code></pre>
-        </div>
+          </li>
+        </ol>
       </section>
 
       <section id="test" class="space-y-4">
         <h2 class="text-xl font-semibold text-sky-700">7. Test</h2>
         <ol class="list-decimal list-inside space-y-2">
-          <li>Open https://login.microsoftonline.com/login.srf?whr=examplelab.com</li>
-          <li>Sign in as testuser@examplelab.com</li>
-          <li>Expect redirect to RI then back to Microsoft</li>
+          <li>Open this in a browser:
+            <div class="text-sm mt-1 bg-gray-100 rounded p-2"><code id="login-url">https://login.microsoftonline.com/login.srf?whr=DOMAIN</code></div>
+          </li>
+          <li>Sign in as the pilot user. Expect redirect to RI and back to Microsoft.</li>
         </ol>
       </section>
 
-      <section id="troubleshoot" class="space-y-8">
+      <section id="troubleshoot" class="space-y-6">
         <h2 class="text-xl font-semibold text-sky-700">8. Troubleshooting</h2>
         <div class="grid md:grid-cols-2 gap-8">
           <div>
             <h3 class="font-semibold mb-2">Common errors</h3>
             <ul class="list-disc list-inside text-sm space-y-2">
-              <li>AADSTS50008 SAML token invalid. Use the RI template and keep SAML 1.1, Audience urn:federation:MicrosoftOnline, ReplyTo https://login.microsoftonline.com/login.srf, NameID mail</li>
-              <li>AADSTS51004 user account guid does not exist. You are sending a guid as NameID or the anchor does not match</li>
-              <li>AADSTS90019 no tenant info. Add whr param during tests or fix NameID and ReplyTo</li>
-              <li>Cannot update SourceAnchor. Delete and recreate the Entra user with the correct onPremisesImmutableId or un-federate in a lab only</li>
+              <li>AADSTS50008 SAML token invalid. Use the template defaults. SAML 1.1. Audience urn:federation:MicrosoftOnline. ReplyTo https://login.microsoftonline.com/login.srf. NameID mail</li>
+              <li>AADSTS51004 user account guid does not exist. Fix NameID and UPN to mail or fix anchor mismatch</li>
+              <li>AADSTS90019 no tenant info. Use the login.srf URL with whr or fix ReplyTo and NameID</li>
+              <li>Cannot update SourceAnchor. Delete and recreate the Entra user with correct onPremisesImmutableId. Lab only alternative is switch domain to managed, update, refederate</li>
             </ul>
           </div>
           <div>
             <h3 class="font-semibold mb-2">Quick checks</h3>
-            <pre class="bg-gray-100 p-3 rounded text-sm whitespace-pre-wrap"><code>Get-MgDomain -DomainId examplelab.com | fl Id,AuthenticationType
-Get-MgDomainFederationConfiguration -DomainId examplelab.com | fl *
-Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/users/testuser@examplelab.com?$select=id,userPrincipalName,onPremisesImmutableId"</code></pre>
+            <pre class="bg-gray-100 p-3 rounded text-sm whitespace-pre-wrap"><code id="ps-checks">Get-MgDomain -DomainId DOMAIN | fl Id,AuthenticationType
+Get-MgDomainFederationConfiguration -DomainId DOMAIN | fl *
+Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/users/UPN?$select=id,userPrincipalName,onPremisesImmutableId"</code></pre>
           </div>
         </div>
       </section>
 
       <section id="rollback" class="space-y-4 pb-16">
         <h2 class="text-xl font-semibold text-sky-700">9. Rollback</h2>
-        <p class="text-sm">Un-federate the test domain if you want to return to managed auth.</p>
-        <pre class="bg-gray-100 p-2 rounded text-sm whitespace-pre-wrap"><code>$domain = "examplelab.com"
+        <p class="text-sm">To return the test domain to managed auth, remove the federation config.</p>
+        <pre class="bg-gray-100 p-2 rounded text-sm whitespace-pre-wrap"><code id="ps-rollback">$domain = "DOMAIN"
 $fed    = Get-MgDomainFederationConfiguration -DomainId $domain
 Remove-MgDomainFederationConfiguration -DomainId $domain -InternalDomainFederationId $fed.Id
 Get-MgDomain -DomainId $domain | fl Id,AuthenticationType</code></pre>
       </section>
-
     </main>
 
     <footer class="bg-sky-700 text-white text-sm py-4">
       <div class="max-w-7xl mx-auto px-4 text-center">
-        RI x Entra Federation Sandbox
+        Entra x RI Federation Sandbox
       </div>
     </footer>
+
+    <script>
+      const defaults = {
+        TENANT_ID: "00000000-0000-0000-0000-000000000000",
+        DOMAIN: "examplelab.com",
+        RI_HOST: "https://your-ri-host",
+        PEM: "-----BEGIN CERTIFICATE-----\nPASTE_YOUR_PEM\n-----END CERTIFICATE-----",
+        UPN: "testuser@examplelab.com",
+        NICK: "testuser",
+        PWD: "P@ssw0rd123!",
+        ANCHOR: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      };
+
+      const ids = ["TENANT_ID","DOMAIN","RI_HOST","PEM","UPN","NICK","PWD","ANCHOR"];
+      const els = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
+      ids.forEach(id => { if (els[id]) els[id].value = defaults[id]; });
+
+      function fillBlocks() {
+        const v = Object.fromEntries(ids.map(id => [id, (els[id]?.value || "").trim()]));
+        const pemBody = v.PEM; 
+        const rep = (s) => s
+          .replaceAll("TENANT_ID", v.TENANT_ID || defaults.TENANT_ID)
+          .replaceAll("DOMAIN", v.DOMAIN || defaults.DOMAIN)
+          .replaceAll("RI_HOST", v.RI_HOST || defaults.RI_HOST)
+          .replaceAll("PEM_TEXT", pemBody || defaults.PEM)
+          .replaceAll("UPN", v.UPN || defaults.UPN)
+          .replaceAll("NICK", v.NICK || defaults.NICK)
+          .replaceAll("PWD", v.PWD || defaults.PWD)
+          .replaceAll("ANCHOR", v.ANCHOR || defaults.ANCHOR);
+
+        document.getElementById("ps-federate").textContent = rep(document.getElementById("ps-federate").textContent);
+        document.getElementById("ps-user").textContent     = rep(document.getElementById("ps-user").textContent);
+        document.getElementById("ps-checks").textContent   = rep(document.getElementById("ps-checks").textContent);
+        document.getElementById("ps-rollback").textContent = rep(document.getElementById("ps-rollback").textContent);
+        document.getElementById("login-url").textContent   = rep(document.getElementById("login-url").textContent);
+      }
+
+      function applyUserJson() {
+        const raw = document.getElementById("RI_JSON").value.trim();
+        if (!raw) return;
+        try {
+          const j = JSON.parse(raw);
+          if (j.mail) els.UPN.value = j.mail;
+          if (j.idautoID) els.ANCHOR.value = j.idautoID;
+          if (!els.NICK.value && j.mail) els.NICK.value = j.mail.split("@")[0];
+        } catch(e) {
+          alert("Invalid JSON in RI user box");
+        }
+      }
+
+      document.getElementById("applyVars").addEventListener("click", fillBlocks);
+      document.getElementById("applyUser").addEventListener("click", () => { applyUserJson(); fillBlocks(); });
+
+      const tabVars = document.getElementById("tab-vars");
+      const tabUser = document.getElementById("tab-user");
+      const panelVars = document.getElementById("panel-vars");
+      const panelUser = document.getElementById("panel-user");
+      tabVars.addEventListener("click", () => {
+        tabVars.classList.add("text-sky-700","border-b-2","border-sky-700");
+        tabUser.classList.remove("text-sky-700","border-b-2","border-sky-700");
+        panelVars.classList.remove("hidden");
+        panelUser.classList.add("hidden");
+      });
+      tabUser.addEventListener("click", () => {
+        tabUser.classList.add("text-sky-700","border-b-2","border-sky-700");
+        tabVars.classList.remove("text-sky-700","border-b-2","border-sky-700");
+        panelUser.classList.remove("hidden");
+        panelVars.classList.add("hidden");
+      });
+
+      fillBlocks();
+    </script>
   </body>
 </html>
